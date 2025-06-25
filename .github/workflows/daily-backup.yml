@@ -1,0 +1,36 @@
+name: Daily Project Backup
+
+on:
+  schedule:
+    # Runs at 04:05 UTC every day.
+    # This is a good time as it's typically a low-traffic period.
+    - cron: '5 4 * * *'
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file for backup
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+        shell: bash
+        # This step will create the .env file from a secret you'll set in GitHub.
+        # The backup script will then include it in the archive.
+        # If the secret isn't set, this creates an empty file, and the backup script runs without it.
+
+      - name: Make backup script executable
+        run: chmod +x scripts/backup.sh
+
+      - name: Run backup script
+        id: backup_script
+        run: ./scripts/backup.sh
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: the-daily-lesson-backup
+          path: backups/*.tar.gz
+          retention-days: 14 # Store backups for 2 weeks 
